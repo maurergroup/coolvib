@@ -39,14 +39,14 @@ nkpts = len(kpoint_weights)
 eigenvalues, psi, occ, orb_pos = aims_read_eigenvalues_and_coefficients(fermi_level, './aims_parser_test/', spin=True)
 
 print(eigenvalues)
-print(eigenvalues.shape)
-print(psi.shape)
+print("eigenvalues shape = ", eigenvalues.shape)
+print("wavefunction shape = ", psi.shape)
 
 H, S = aims_read_HS('./aims_parser_test/',spin=True)
 
-print(H.shape)
+print("Hamiltonain shape = ", H.shape)
 
-print(S.shape)
+print("overlap matrix shape = ", S.shape)
 
 nspin = 0
 nk = 0
@@ -59,8 +59,12 @@ S_invH = np.dot(S_inv,H1)
 
 import scipy.linalg as la
 E, V = la.eigh(H1,S1)
-print(E*27.2114)
+
+print(E*27.2114) #27.2114 converts Ha to eV
+for i in range(len(psi1)):
+    print(psi1[i])
 
 for i in range(len(psi1)):
     print(np.dot(psi1[i].conjugate(),np.dot(S_invH,psi1[i]))/np.dot(psi1[i].conjugate(),psi1[i])*27.2114)
 
+#As is this code will return the first 4 values from E * 27.2114 correctly but will then stop. 

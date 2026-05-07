@@ -207,8 +207,7 @@ def aims_read_fermi_and_kpoints(filename,cell=None):
                 print('Found k_point_list keyword, extracting kpoint_weights')
                 kweights_exist = True
 
-            if '| Chemical potential (Fermi level):' in line \
-                    and not fermi_level_exists:
+            if '| Chemical potential (Fermi level)' in line and not fermi_level_exists:
                 print('Found Fermi Level, extracting fermi level')
                 fermi_level_exists = True
 
@@ -247,7 +246,6 @@ def aims_read_fermi_and_kpoints(filename,cell=None):
                     Either k_point_list keyword not set, or run is not converged \n \
                     or you are using an unsupported FHI-aims version.')
 
-
 def aims_read_eigenvalues_and_coefficients(fermi_level, directory='./', spin=False, debug=False):
     """
     This routine reads eigenvalues and eigenvectors from aims output
@@ -276,7 +274,7 @@ def aims_read_eigenvalues_and_coefficients(fermi_level, directory='./', spin=Fal
             eigenvector_files.append(directory+'/'+file)
 
     if spin:
-        n_kpts = len(eigenvector_files)/2
+        n_kpts = int(len(eigenvector_files)/2)
         n_spin = 2
     else:
         n_kpts = len(eigenvector_files)
@@ -289,20 +287,26 @@ def aims_read_eigenvalues_and_coefficients(fermi_level, directory='./', spin=Fal
         filename = name_base + '_dn.band_1.kpt_1.out'
     else:
         filename = name_base + '.band_1.kpt_1.out'
+
+    first_basis_line = 7 #number of lines at the top of the file before the basis decomposition
+    n_states_line = 3 #number of lines at the top of the file before the list of states
+    
     with open(filename, 'r') as f:
         lines = f.readlines()
-        n_basis = len(lines) - 8
-        n_states = len(lines[4].split()[3:])
+        n_basis = len(lines) - first_basis_line
+        n_states = len(lines[4].split()[n_states_line:])
     
     eigenvalues = np.zeros([n_kpts, n_spin, n_states])
     occ = np.zeros([n_kpts, n_spin, n_states])
     psi = np.zeros([n_kpts, n_spin, n_states, n_basis],dtype=complex)
     orbital_pos = np.zeros(n_basis,dtype=np.int32)
+    
     #loop through all files
     for s in range(n_spin):
         prefix = name_base
         if spin:
             prefix += spin_postfix[s]
+        
         #this now assumes 2 kpts per 'band'
         for k in range(n_kpts):
             band = int(k/band_basis)+1
@@ -313,15 +317,23 @@ def aims_read_eigenvalues_and_coefficients(fermi_level, directory='./', spin=Fal
                 if debug:
                     print('Reading eigenvalues and psi from {0} '.format(filename))
                 lines = f.readlines()
+                
                 #line 4 contains the eigenvalues
-                eigenvalues[k,s,:] = np.array(lines[5].split()[3:]).astype(np.float64)
+                eigenval_line = 4
+                print(np.array(lines[eigenval_line].split()[n_states_line:]))
+                eigenvalues[k,s,:] = np.array(lines[eigenval_line].split()[n_states_line:]).astype(np.float64)
+                
                 #line 5 contains the occupations
-                occ[k,s,:] = np.array(lines[6].split()[3:]).astype(np.float64)
-                nline = 8
+                occ_line = 5
+                print(np.array(lines[occ_line].split()[n_states_line:]))
+                occ[k,s,:] = np.array(lines[occ_line].split()[n_states_line:]).astype(np.float64)
+                
                 for i in range(n_basis):
-                    read_psi = np.array(lines[nline+i].split()[6:]).astype(np.float64).reshape(-1,2)
+                    read_psi = np.array(lines[first_basis_line+i].split()[6:]).astype(np.float64).reshape(-1,2)
                     psi[k,s,:,i] = read_psi[:,0] + 1j*read_psi[:,1]
-                    orbital_pos[i] = int(lines[nline+i].split()[1]) -1
+                    orbital_pos[i] = int(lines[first_basis_line+i].split()[1]) -1
+    
+    return eigenvalues, psi, occ, orbital_pos
 
 def aims_read_HS(directory='./', spin=False, debug=False):
     """
@@ -361,7 +373,7 @@ def aims_read_HS(directory='./', spin=False, debug=False):
     filename = directory+'/'+name_base_S + '.band_1.kpt_1.out'
     with open(filename, 'r') as f:
         lines = f.readlines()
-        n_basis = len(lines) -3 
+        n_basis = len(lines) - 2 
     
     H = np.zeros([n_kpts, n_spin, n_basis, n_basis],dtype=complex)
     S = np.zeros([n_kpts, n_basis, n_basis],dtype=complex)
@@ -371,16 +383,18 @@ def aims_read_HS(directory='./', spin=False, debug=False):
         kp = k%band_basis+1
         filename_H = directory + '/'+name_base_H + '.band_{0}.kpt_{1}.out'.format(band,kp)
         filename_S = directory + '/'+name_base_S + '.band_{0}.kpt_{1}.out'.format(band,kp)
+        
         #opening files
         with open(filename_S,'r') as f:
             if debug:
                 print('Reading overlap_matrix from {0} '.format(filename_S))
-            s = np.loadtxt(filename_S,skiprows=3).reshape([n_basis,n_basis,2])
+            print(np.loadtxt(filename_S,skiprows=2))
+            s = np.loadtxt(filename_S,skiprows=2).reshape([n_basis,n_basis,2])
             S[k, :, :] = s[:,:,0] + 1j*s[:,:,1]
         with open(filename_H,'r') as f:
             if debug:
                 print('Reading hamiltonian matrix from {0} '.format(filename_H))
-            h = np.loadtxt(filename_H,skiprows=3)
+            h = np.loadtxt(filename_H,skiprows=2)
             if spin:
                 h_dn = h[:n_basis].reshape([n_basis,n_basis,2])
                 h_up = h[n_basis:].reshape([n_basis,n_basis,2])
