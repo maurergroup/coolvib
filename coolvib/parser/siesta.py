@@ -61,7 +61,7 @@ def parse_siesta_tensor(model, path='./',seed='MyM',active_atoms=[1], incr=0.01,
 
     """
 
-    print 'Reading eigenvalues and eigenvectors'
+    print('Reading eigenvalues and eigenvectors')
     fermi_energy, eigenvalues = siesta_read_eigenvalues(path+'/eq/'+seed)
     n_spin = eigenvalues.shape[1]
     kpoints_weights = siesta_read_kpoints(path+'/eq/'+seed)
@@ -70,13 +70,13 @@ def parse_siesta_tensor(model, path='./',seed='MyM',active_atoms=[1], incr=0.01,
     n_basis = psi.shape[3]
     cell, atomic_positions = siesta_read_struct_out(path+'/eq/'+seed)
 
-    H_q = np.zeros([len(active_atoms),3,len(kpoints_weights), n_spin, n_basis, n_basis],dtype=np.complex)
-    S_q = np.zeros([len(active_atoms),3,len(kpoints_weights), n_basis, n_basis],dtype=np.complex)
+    H_q = np.zeros([len(active_atoms),3,len(kpoints_weights), n_spin, n_basis, n_basis],dtype=np.complex128)
+    S_q = np.zeros([len(active_atoms),3,len(kpoints_weights), n_basis, n_basis],dtype=np.complex128)
 
     ai = 0
     for a in active_atoms:
         for c in range(3):
-            print 'Reading hamiltonian and overlap matrices for coordinate {0} {1}'.format(a, c)
+            print('Reading hamiltonian and overlap matrices for coordinate {0} {1}'.format(a, c))
             H_plus, S_plus = siesta_read_HSX(kpoints_weights, path+'/a{0}c{1}+/'.format(int(a),int(c))+seed,debug=debug)
             H_minus, S_minus = siesta_read_HSX(kpoints_weights, path+'/a{0}c{1}-/'.format(int(a),int(c))+seed,debug=debug)
             H_q[ai,c,:,:,:,:] = (H_plus - H_minus)/2.0/incr
@@ -180,8 +180,8 @@ def siesta_read_struct_out(filename):
         for i in range(len(content)-4):
             for j in range(3):
                 atomic_positions[i,j] = np.float(content[i+4].split()[j+2])
-	for i in range(len(atomic_positions)):
-            atomic_positions[i]=np.dot(atomic_positions[i],cell)
+    for i in range(len(atomic_positions)):
+        atomic_positions[i]=np.dot(atomic_positions[i],cell)
     return cell, atomic_positions
 
 def siesta_read_coefficients(filename, debug=0):
@@ -198,11 +198,11 @@ def siesta_read_coefficients(filename, debug=0):
 
     f= FortranFile("%s.WFSX" % filename)
     nk,gamma= f.read_ints()
-    if debug: print "nk, gamma  = ", nk,gamma
+    if debug: print("nk, gamma  = ", nk,gamma)
     nspin = int(f.read_ints())
-    if debug: print "nspin =",nspin
+    if debug: print("nspin =",nspin)
     nuotot = int(f.read_ints())
-    if debug: print "nuotot =",nuotot
+    if debug: print("nuotot =",nuotot)
     bla = f.read_record([('orbital_pos','i4'),('b','20S'),('c','i4'),('d','i4'),('e','20S')])
     orbital_pos = np.array(bla['orbital_pos']-1,dtype=np.int)
     psi=np.zeros((nk,nspin,nuotot,nuotot))
@@ -235,7 +235,7 @@ def siesta_read_coefficients(filename, debug=0):
                     energy=f.read_reals('d')
                     # and all the orbital coefficients (real value, followed by the imaginary value
                     read_psi = f.read_reals('f')
-                    if debug: print "nutot", nuotot, 'len(read_psi)', len(read_psi)
+                    if debug: print("nutot", nuotot, 'len(read_psi)', len(read_psi))
                     read_psi=np.reshape(read_psi, (nuotot,2))  # reshape it 
                     # and make a row of complex numbers
                     psi[iik-1,iispin-1,iw-1,:]=read_psi[:,0]+1j*read_psi[:,1]  
@@ -260,92 +260,92 @@ def siesta_read_HSX(kpts_array, filename, debug=0):
     #transform back to 1/bohr
     kpts = kpts_array.copy()
     kpts[:,:3] *= bohr
-    if debug: print 'Reading Hamiltonian and Overlap from file : '+filename+'.HSX'
+    if debug: print('Reading Hamiltonian and Overlap from file : '+filename+'.HSX')
     
     #1st line: 
     # No. of orbs in cell, No. of orbs in supercell, nspin, nnzs
     no_u, no_s, nspin, nnzs = f.read_ints()
-    if debug: print no_u, no_s, nspin, nnzs
+    if debug: print(no_u, no_s, nspin, nnzs)
     # 0 if klist, -1 if only gamma pnt is used
     gamma = bool(f.read_ints()[0])
-    if debug: print "gamma from HSX", gamma
+    if debug: print("gamma from HSX", gamma)
     #index list, for every orb in supercell finds 
     #correspond orb in small cell
     if gamma==False:
         indxuo = f.read_ints() 
         if debug: 
-            print 'indxuo'
-            print indxuo.shape
-            print indxuo
+            print('indxuo')
+            print(indxuo.shape)
+            print(indxuo)
     #numh contains the number of orbitals connected 
     #with orbital i
     numh = f.read_ints()
     if debug:
-        print 'numh'
-        print numh.shape
-        print numh
+        print('numh')
+        print(numh.shape)
+        print(numh)
     #generating listhptr
-    listhptr = np.zeros(no_u,dtype=np.float)
+    listhptr = np.zeros(no_u,dtype=np.float64)
     listhptr[0] = 0
-    for oi in xrange(1,no_u):
+    for oi in range(1,no_u):
         listhptr[oi] = listhptr[oi-1] + numh[oi-1]
     if debug:
-        print 'listhptr'
-        print listhptr
+        print('listhptr')
+        print(listhptr)
     #reading listh
-    listh = np.zeros(nnzs,dtype=np.float)
-    for oi in xrange(no_u):
+    listh = np.zeros(nnzs,dtype=np.float64)
+    for oi in range(no_u):
         bla = f.read_ints()
-        for im in xrange(numh[oi]):
+        for im in range(numh[oi]):
             listh[listhptr[oi]+im] = bla[im] 
     if debug: 
-        print 'listh'
-        print listh.shape
-        print listh
+        print('listh')
+        print(listh.shape)
+        print(listh)
 
-    h = np.zeros([nnzs,nspin],dtype=np.float)
+    h = np.zeros([nnzs,nspin],dtype=np.float64)
     for si in range(nspin):
         for oi in range(no_u):
             bla = f.read_reals('f')
-            for mi in xrange(numh[oi]):
+            for mi in range(numh[oi]):
                 h[listhptr[oi]+mi,si] = bla[mi]
-    s = np.zeros([nnzs],dtype=np.float)
+    s = np.zeros([nnzs],dtype=np.float64)
     for oi in range(no_u):
         bla = f.read_reals('f')
-        for mi in xrange(numh[oi]):
+        for mi in range(numh[oi]):
             s[listhptr[oi]+mi] = bla[mi]
     if debug:
-        print h.shape
-        print s.shape
+        print(h.shape)
+        print(s.shape)
    
     #reading No. of elecs, fermi smearing
     nelec, fermi_smear = f.read_reals('d')
-    if debug: print nelec, fermi_smear
+    if debug: print(nelec, fermi_smear)
 
     if gamma==False:
-        xij = np.zeros([nnzs,3],dtype=np.float)
+        xij = np.zeros([nnzs,3],dtype=np.float64)
         #now we read the xij array, atomic position distances in supercell
         for oi in range(no_u):
             bla = f.read_reals('f')
-            for mi in xrange(numh[oi]):
+            for mi in range(numh[oi]):
                 for xyz in range(3):
                     xij[listhptr[oi]+mi,xyz] = bla[(3*mi)+xyz]
-    if debug: print xij.shape
+    if debug: print(xij.shape)
 
     ##THAT was the READ_IN part
     ## now we construct the hamiltonian and overlap
     if gamma==False:
-        H = np.zeros([nkpts,nspin,no_u,no_u],dtype=np.complex)
-        S = np.zeros([nkpts,no_u,no_u],dtype=np.complex)
+        H = np.zeros([nkpts,nspin,no_u,no_u],dtype=np.complex128)
+        S = np.zeros([nkpts,no_u,no_u],dtype=np.complex128)
     else:
-        H = np.zeros([1,nspin,no_u,no_u],dtype=np.float)
-        S = np.zeros([1,no_u,no_u],dtype=np.float)
+        H = np.zeros([1,nspin,no_u,no_u],dtype=np.float64)
+        S = np.zeros([1,no_u,no_u],dtype=np.float64)
 
     if gamma==False:
-        kpts = np.array(kpts,dtype=np.float)
-        xij = np.array(xij,dtype=np.float)
-        h = np.array(h,dtype=np.float)
-        s = np.array(s,dtype=np.float)
+        kpts = np.array(kpts,dtype=np.float64)
+        xij = np.array(xij,dtype=np.float64)
+        h = np.array(h,dtype=np.float64)
+        s = np.array(s,dtype=np.float64)
         listh = np.array(listh,dtype=np.int)
         listhptr = np.array(listhptr,dtype=np.int)
         numh = np.array(numh,dtype=np.int)

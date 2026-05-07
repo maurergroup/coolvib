@@ -14,10 +14,8 @@
 #        along with coolvib.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-#from distutils.core import setup
-from distutils.core import setup, Command
-from distutils.extension import Extension
-from Cython.Distutils import build_ext 
+from setuptools import setup, Extension
+from Cython.Build import cythonize
 import numpy as np
 
 # Utility function to read the README file.
@@ -40,17 +38,14 @@ packages = [ package_name ]
 for package in __all__:
     packages.append(package_name + '.' + package)
 
-class test(Command):
-    def __init__(self, dist):
-        Command.__init__(self, dist)
-        self.sub_commands = ['build']
-
 ext_modules = [
            Extension("coolvib.parser.siesta_mod",["coolvib/parser/siesta_mod.pyx"],
                include_dirs=[np.get_include()]), 
            Extension("coolvib.routines.build_G",["coolvib/routines/build_G.pyx"],
                include_dirs=[np.get_include()]) 
         ]
+
+ext_modules = cythonize(ext_modules, language_level="3")
 
 setup(
     name = package_name,
@@ -64,8 +59,17 @@ setup(
             "),
     license = "GNU General Public License",
     keywords = "vibrational cooling, quantum chemistry",
-    cmdclass = {'build_ext' : build_ext,
-        'test' : test},
+    python_requires='>=3.6',
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+    ],
     packages = packages,
     package_dir = {package_name: package_name},
     platforms='linux',

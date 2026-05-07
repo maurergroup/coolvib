@@ -70,17 +70,17 @@ def analyse_tensor(friction_tensor):
     eigenvalues, eigenvectors = la.eigh(friction_tensor)
 
     #printing
-    print 'Friction Tensor' 
+    print('Friction Tensor') 
     print_matrix(friction_tensor/time_to_ps)
-    print ' '
-    print 'Friction Eigenvalues in 1/ps'
-    print ' '.join( ['{0:10d}'.format(y) for y in range(len(eigenvalues)) ])
-    print ' '.join( ['{0:10.4f}'.format(y) for y in eigenvalues/time_to_ps ]  )
-    print 'Friction Eigenvectors'
+    print(' ')
+    print('Friction Eigenvalues in 1/ps')
+    print(' '.join( ['{0:10d}'.format(y) for y in range(len(eigenvalues)) ]))
+    print(' '.join( ['{0:10.4f}'.format(y) for y in eigenvalues/time_to_ps ]  ))
+    print('Friction Eigenvectors')
     print_matrix(eigenvectors)
-    print 'Principal lifetimes in ps'
-    print ' '.join( ['{0:10d}'.format(y) for y in range(len(eigenvalues)) ])
-    print ' '.join( ['{0:10.4f}'.format(y) for y in 1./(eigenvalues/time_to_ps) ]  )
+    print('Principal lifetimes in ps')
+    print(' '.join( ['{0:10d}'.format(y) for y in range(len(eigenvalues)) ]))
+    print(' '.join( ['{0:10.4f}'.format(y) for y in 1./(eigenvalues/time_to_ps) ]  ))
 
     return eigenvectors, eigenvalues
     

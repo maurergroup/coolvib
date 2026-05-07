@@ -60,7 +60,7 @@ def parse_aims_tensor(model, spin=True, path='./', filename='aims.out', active_a
 
     cell = model.atoms.get_cell()
 
-    print 'Reading eigenvalues and eigenvectors'
+    print('Reading eigenvalues and eigenvectors')
     fermi_level, kpoints_weights = aims_read_fermi_and_kpoints(pathjoin(path+'/eq', filename), cell)
     eigenvalues, psi, occ, basis_pos = \
             aims_read_eigenvalues_and_coefficients(fermi_level, directory=pathjoin(path,'eq'),\
@@ -72,13 +72,13 @@ def parse_aims_tensor(model, spin=True, path='./', filename='aims.out', active_a
     n_states = psi.shape[2]
     n_basis = psi.shape[3]
 
-    H_q = np.zeros([len(active_atoms),3,len(kpoints_weights), n_spin, n_basis, n_basis],dtype=np.complex)
-    S_q = np.zeros([len(active_atoms),3,len(kpoints_weights), n_basis, n_basis],dtype=np.complex)
+    H_q = np.zeros([len(active_atoms),3,len(kpoints_weights), n_spin, n_basis, n_basis],dtype=np.complex128)
+    S_q = np.zeros([len(active_atoms),3,len(kpoints_weights), n_basis, n_basis],dtype=np.complex128)
 
     ai = 0
     for a in active_atoms:
         for c in range(3):
-            print 'Reading hamiltonian and overlap matrices for coordinate {0} {1}'.format(a, c)
+            print('Reading hamiltonian and overlap matrices for coordinate {0} {1}'.format(a, c))
             H_plus, S_plus = aims_read_HS(path+'/a{0}c{1}+/'.format(int(a),int(c)),spin=spin,debug=debug)
             H_minus, S_minus = aims_read_HS(path+'/a{0}c{1}-/'.format(int(a),int(c)),spin=spin,debug=debug)
             H_q[ai,c,:,:,:,:] = (H_plus - H_minus)/2.0/incr
@@ -132,7 +132,7 @@ def parse_aims_mode(model, spin=True, path='./', prefix='mode', filename='aims.o
 
     cell = model.atoms.get_cell()
 
-    print 'Reading eigenvalues and eigenvectors'
+    print('Reading eigenvalues and eigenvectors')
     fermi_level, kpoints_weights = aims_read_fermi_and_kpoints(pathjoin(path+'/'+prefix+'_eq', filename), cell)
     eigenvalues, psi, occ, basis_pos = \
             aims_read_eigenvalues_and_coefficients(fermi_level, directory=pathjoin(path,prefix+'_eq'),\
@@ -144,11 +144,11 @@ def parse_aims_mode(model, spin=True, path='./', prefix='mode', filename='aims.o
     n_states = psi.shape[2]
     n_basis = psi.shape[3]
 
-    H_q = np.zeros([len(kpoints_weights), n_spin, n_basis, n_basis],dtype=np.complex)
-    S_q = np.zeros([len(kpoints_weights), n_basis, n_basis],dtype=np.complex)
+    H_q = np.zeros([len(kpoints_weights), n_spin, n_basis, n_basis],dtype=np.complex128)
+    S_q = np.zeros([len(kpoints_weights), n_basis, n_basis],dtype=np.complex128)
 
 
-    print 'Reading hamiltonian and overlap matrices'
+    print('Reading hamiltonian and overlap matrices')
     H_plus, S_plus = aims_read_HS(path+'/'+prefix+'_+',spin=spin,debug=debug)
     H_minus, S_minus = aims_read_HS(path+'/'+prefix+'_-',spin=spin,debug=debug)
     H_q[:,:,:,:] = (H_plus - H_minus)/2.0/incr
@@ -204,12 +204,12 @@ def aims_read_fermi_and_kpoints(filename,cell=None):
         content = f.readlines()
         for l, line in enumerate(content):
             if 'k_point_list' in line:
-                print 'Found k_point_list keyword, extracting kpoint_weights'
+                print('Found k_point_list keyword, extracting kpoint_weights')
                 kweights_exist = True
 
             if '| Chemical potential (Fermi level):' in line \
                     and not fermi_level_exists:
-                print 'Found Fermi Level, extracting fermi level'
+                print('Found Fermi Level, extracting fermi level')
                 fermi_level_exists = True
 
         if fermi_level_exists and kweights_exist:
@@ -293,12 +293,11 @@ def aims_read_eigenvalues_and_coefficients(fermi_level, directory='./', spin=Fal
         lines = f.readlines()
         n_basis = len(lines) - 8
         n_states = len(lines[4].split()[3:])
-    #print n_basis, n_kpts, n_spin
     
     eigenvalues = np.zeros([n_kpts, n_spin, n_states])
     occ = np.zeros([n_kpts, n_spin, n_states])
     psi = np.zeros([n_kpts, n_spin, n_states, n_basis],dtype=complex)
-    orbital_pos = np.zeros(n_basis,dtype=np.int)
+    orbital_pos = np.zeros(n_basis,dtype=np.int32)
     #loop through all files
     for s in range(n_spin):
         prefix = name_base
@@ -312,19 +311,17 @@ def aims_read_eigenvalues_and_coefficients(fermi_level, directory='./', spin=Fal
             #opening file
             with open(filename,'r') as f:
                 if debug:
-                    print 'Reading eigenvalues and psi from {0} '.format(filename)
+                    print('Reading eigenvalues and psi from {0} '.format(filename))
                 lines = f.readlines()
                 #line 4 contains the eigenvalues
-                eigenvalues[k,s,:] = np.array(lines[5].split()[3:]).astype(np.float)
+                eigenvalues[k,s,:] = np.array(lines[5].split()[3:]).astype(np.float64)
                 #line 5 contains the occupations
-                occ[k,s,:] = np.array(lines[6].split()[3:]).astype(np.float)
+                occ[k,s,:] = np.array(lines[6].split()[3:]).astype(np.float64)
                 nline = 8
                 for i in range(n_basis):
-                    read_psi = np.array(lines[nline+i].split()[6:]).astype(np.float).reshape(-1,2)
+                    read_psi = np.array(lines[nline+i].split()[6:]).astype(np.float64).reshape(-1,2)
                     psi[k,s,:,i] = read_psi[:,0] + 1j*read_psi[:,1]
                     orbital_pos[i] = int(lines[nline+i].split()[1]) -1
-
-    return eigenvalues+fermi_level, psi, occ, orbital_pos
 
 def aims_read_HS(directory='./', spin=False, debug=False):
     """
@@ -377,12 +374,12 @@ def aims_read_HS(directory='./', spin=False, debug=False):
         #opening files
         with open(filename_S,'r') as f:
             if debug:
-                print 'Reading overlap_matrix from {0} '.format(filename_S)
+                print('Reading overlap_matrix from {0} '.format(filename_S))
             s = np.loadtxt(filename_S,skiprows=3).reshape([n_basis,n_basis,2])
             S[k, :, :] = s[:,:,0] + 1j*s[:,:,1]
         with open(filename_H,'r') as f:
             if debug:
-                print 'Reading hamiltonian matrix from {0} '.format(filename_H)
+                print('Reading hamiltonian matrix from {0} '.format(filename_H))
             h = np.loadtxt(filename_H,skiprows=3)
             if spin:
                 h_dn = h[:n_basis].reshape([n_basis,n_basis,2])

@@ -221,7 +221,7 @@ class workflow_mode():
         else:
             self.calculate_friction_tensor()
 
-        print 'Friction' 
-        print self.friction_tensor/time_to_ps
-        print 'Lifetime'
-        print 1./(self.friction_tensor/time_to_ps)
+        print('Friction') 
+        print(self.friction_tensor/time_to_ps)
+        print('Lifetime')
+        print(1./(self.friction_tensor/time_to_ps))

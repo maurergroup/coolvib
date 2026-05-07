@@ -44,7 +44,7 @@ def lifetime_routine_momentum(kpoints_weights,n_spin,eigenvalues,
     delta = hbar*omega*conversion_factor # from Hz to eV
     inside_window, dirac_weight = generate_delta_approximation(dirac_method, fermi_centered, delta, window)
 
-    print 'prefac ', pi*hbar_1
+    print('prefac ', pi*hbar_1)
 
     nbasis = psi.shape[-1]
     #prepare N vector

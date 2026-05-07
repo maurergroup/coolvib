@@ -114,13 +114,13 @@ def calculate_spectral_function_mode(
     T = keys['temperature']
     debug = keys['debug']
 
-    spectral_function = np.zeros([1,n_axis],dtype=np.complex)
+    spectral_function = np.zeros([1,n_axis],dtype=np.complex128)
 
-    print 'Calculating spectral function' 
+    print('Calculating spectral function') 
     for s in range(n_spin):
         for k in range(n_kpts):
             if debug:
-                print 's ', s, 'k ', k
+                print('s ', s, 'k ', k)
             wk = kweights[k]
             orb_min = 0
             orb_lumo = 0
@@ -137,25 +137,25 @@ def calculate_spectral_function_mode(
                 if e<=ef+2.00*keys['max_energy']:
                     orb_max = ei
             if debug:
-                print orb_min, orb_homo, orb_lumo, orb_max
+                print(orb_min, orb_homo, orb_lumo, orb_max)
             for i in range(orb_min,orb_homo+1):
                 for f in range(orb_lumo, orb_max+1):
                     e = eigenvalues[k,s,f] - eigenvalues[k,s,i]
                     occ =(fermi_occ(eigenvalues[k,s,i],ef,T) - fermi_occ(eigenvalues[k,s,f],ef,T))*(2./n_spin)
                     if e>0.0 and e<=1.0*keys['max_energy'] and occ>=1.E-5:
                         #calculate transition strength
-                        nacs1 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[k,s,:,:],\
+                        nacs1 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[k,s,:,:],
                                 psi[k,s,f,:]))
-                        nacs2 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[k,s,:,:],\
+                        nacs2 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[k,s,:,:],
                                 psi[k,s,f,:]))
                         nacs = np.dot(nacs1.conjugate().transpose(),nacs2)
                         nacs /= (e)
                         nacs *= wk
                         nacs *= occ
                         if debug:
-                            print i, f, e, ' ' , occ, ' ', \
-                                (nacs*hbar*pi/(time_to_ps)).real, \
-                                ' ', (nacs*hbar*pi/(time_to_ps)).imag
+                            print(i, f, e, ' ' , occ, ' ', 
+                                (nacs*hbar*pi/(time_to_ps)).real, 
+                                ' ', (nacs*hbar*pi/(time_to_ps)).imag)
                         spectral_function[0,:] += discretize_peak(e,nacs, x_axis, sigma, delta_method)
             
             spectral_function[0,:] *= (pi*hbar)
@@ -267,11 +267,11 @@ def calculate_spectral_function_tensor(
     counter = 0
     for d in range(n_dim):
         for d2 in range(d,n_dim):
-            print 'Calculating spectral function for components {0} and {1}'.format(d,d2)
+            print('Calculating spectral function for components {0} and {1}'.format(d,d2))
             for s in range(n_spin):
                 for k in range(n_kpts):
                     if debug:
-                        print 's ', s, 'k ', k
+                        print('s ', s, 'k ', k)
                     wk = kweights[k]
                     orb_min = 0
                     orb_lumo = 0
@@ -288,25 +288,23 @@ def calculate_spectral_function_tensor(
                         if e<=ef+2.00*keys['max_energy']:
                             orb_max = ei
                     if debug:
-                        print orb_min, orb_homo, orb_lumo, orb_max
+                        print(orb_min, orb_homo, orb_lumo, orb_max)
                     for i in range(orb_min,orb_homo+1):
                         for f in range(orb_lumo, orb_max+1):
                             e = eigenvalues[k,s,f] - eigenvalues[k,s,i]
                             occ =(fermi_occ(eigenvalues[k,s,i],ef,T) - fermi_occ(eigenvalues[k,s,f],ef,T))*(2./n_spin)
                             if e>0.0 and e<=1.0*keys['max_energy'] and occ>=1.E-5:
                                 #calculate transition strength
-                                nacs1 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[d,k,s,:,:],\
-                                        psi[k,s,f,:]))
-                                nacs2 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[d2,k,s,:,:],\
-                                        psi[k,s,f,:]))
+                                nacs1 = np.dot(psi[k,s,i,:].conjugate().transpose(), np.dot(G[d,k,s,:,:], psi[k,s,f,:]))
+                                nacs2 = np.dot(psi[k,s,i,:].conjugate().transpose(), np.dot(G[d2,k,s,:,:], psi[k,s,f,:]))
                                 nacs = np.dot(nacs1.conjugate().transpose(),nacs2)
                                 nacs /= (e)
                                 nacs *= wk
                                 nacs *= occ
                                 if debug:
-                                    print i, f, e, ' ' , occ, ' ', \
-                                        (nacs*hbar*pi/(time_to_ps*sqrt(masses[d/3]*masses[d2/3]))).real, \
-                                        ' ', (nacs*hbar*pi/(time_to_ps*sqrt(masses[d/3]*masses[d2/3]))).imag
+                                    print(i, f, e, ' ' , occ, ' ', 
+                                        (nacs*hbar*pi/(time_to_ps*sqrt(masses[d//3]*masses[d2//3]))).real, 
+                                        ' ', (nacs*hbar*pi/(time_to_ps*sqrt(masses[d//3]*masses[d2//3]))).imag)
                                 spectral_function[counter,:] += discretize_peak(e,nacs, x_axis, sigma, delta_method)
             
             spectral_function[counter,:] *= (pi*hbar)/sqrt(masses[d/3]*masses[d2/3])
@@ -410,7 +408,7 @@ def calculate_spectral_function_tensor_q(
     kpts = kpoints[:,:3]
 
     #THIS IS WHERE CYTHON STUFF GOES
-    print 'Setting up the coupling matrix '
+    print('Setting up the coupling matrix ')
 
     #prepare N vector
     rec_cell = 2*np.pi*np.linalg.inv(cell.T)
@@ -424,8 +422,8 @@ def calculate_spectral_function_tensor_q(
     for n, nvec in enumerate(N):
         N[n] = np.dot(nvec, cell)
 
-    print 'N'
-    print N
+    print('N')
+    print(N)
 
     raise NotImplementedError('This is work in progress')
 
@@ -439,8 +437,8 @@ def calculate_spectral_function_tensor_q(
             # for l in range(nk):
                 # kvec = kpts[l]
                 # kw = kweights[l]
-                # kx = kvec[0]*(Nvec2[0]-Nvec1[0])+ \
-                     # kvec[1]*(Nvec2[1]-Nvec1[1])+ \
+                # kx = kvec[0]*(Nvec2[0]-Nvec1[0])+ 
+                     # kvec[1]*(Nvec2[1]-Nvec1[1])+ 
                      # kvec[2]*(Nvec2[2]-Nvec1[2])
                 # phase = np.exp(1.0j*kx)             
                 # real_H_r[:,:,N1,N2,:,:,:]+=first_order_H[:,:,l,:,:,:]*phase*kw
@@ -469,15 +467,15 @@ def calculate_spectral_function_tensor_q(
                                 # for l in range(nk):
                                     # kvec = kpts[l]
                                     # kw = kweights[l]
-                                    # kx = kvec[0]*(Nvec2[0]-Nvec1[0])+ \
-                                         # kvec[1]*(Nvec2[1]-Nvec1[1])+ \
+                                    # kx = kvec[0]*(Nvec2[0]-Nvec1[0])+ 
+                                         # kvec[1]*(Nvec2[1]-Nvec1[1])+ 
                                          # kvec[2]*(Nvec2[2]-Nvec1[2])
                                     # phase = np.exp(1.0j*kx)             
                                     # tmpH += first_order_H[:,:,l,s,:,:]*phase*kw
                                     # tmpS += first_order_S[:,:,l,:,:]*phase*kw
 
-                                # kx = kvec2[0]*Nvec2[0]-kvec1[0]*Nvec1[0]+ \
-                                     # kvec2[1]*Nvec2[1]-kvec1[1]*Nvec1[1]+ \
+                                # kx = kvec2[0]*Nvec2[0]-kvec1[0]*Nvec1[0]+ 
+                                     # kvec2[1]*Nvec2[1]-kvec1[1]*Nvec1[1]+ 
                                      # kvec2[2]*Nvec2[2]-kvec1[2]*Nvec1[2]
                                 # phase = np.exp(1.0j*kx)
                                 # G[:,:,k1,k2,s,:,:] += (tmpH-fermi_energy*tmpS)*phase
@@ -495,7 +493,7 @@ def calculate_spectral_function_tensor_q(
             fermi_energy,
             ) 
 
-    print 'Finished setting up the coupling matrix'
+    print('Finished setting up the coupling matrix')
 
     assert 0
 
@@ -515,7 +513,7 @@ def calculate_spectral_function_tensor_q(
     for d in range(n_dim):
         for d2 in range(d,n_dim):
             if debug:
-                print 'Calculating spectral function for components {0} and {1}'.format(d,d2)
+                print('Calculating spectral function for components {0} and {1}'.format(d,d2))
             for k1 in range(n_kpts):
                 for k2 in range(n_kpts):
                     #TODO could be a good place to build G matrix for this set of k points
@@ -523,7 +521,7 @@ def calculate_spectral_function_tensor_q(
                     for s in range(n_spin):
 
                         if debug:
-                            print 's ', s, 'k1 ', k1, 'k2 ', k2
+                            print('s ', s, 'k1 ', k1, 'k2 ', k2)
                         wk1 = kweights[k1]
                         wk2 = kweights[k2]
                         wk = wk1*wk2
@@ -544,7 +542,7 @@ def calculate_spectral_function_tensor_q(
                             if e<=ef+2.00*keys['max_energy']:
                                 orb_max = ei
                         if debug:
-                            print orb_min, orb_homo, orb_lumo, orb_max
+                            print(orb_min, orb_homo, orb_lumo, orb_max)
                         for i in range(orb_min,orb_homo+1):
                             for f in range(orb_lumo, orb_max+1):
                                 e = eigenvalues[k2,s,f] - eigenvalues[k1,s,i]
@@ -552,27 +550,26 @@ def calculate_spectral_function_tensor_q(
                                 if e>0.0 and e<=1.0*keys['max_energy'] and occ>=1.E-5:
                                     #calculate transition strength
 
-                                    nacs1 = np.dot(psi[k1,s,i,:].conjugate().transpose(),np.dot(G[:,:],\
+                                    nacs1 = np.dot(psi[k1,s,i,:].conjugate().transpose(),np.dot(G[:,:],
                                             psi[k2,s,f,:]))
-                                    nacs2 = np.dot(psi[k1,s,i,:].conjugate().transpose(),np.dot(G[:,:],\
+                                    nacs2 = np.dot(psi[k1,s,i,:].conjugate().transpose(),np.dot(G[:,:],
                                             psi[k2,s,f,:]))
                                     nacs = np.dot(nacs1.conjugate().transpose(),nacs2)
                                     nacs /= (e)
                                     nacs *= wk
                                     nacs *= occ*(3.-n_spin)
                                     if debug:
-                                        print i, f, e, ' ' , occ, ' ', \
-                                            (nacs*hbar*pi/(time_to_ps*sqrt(masses[d/3]*masses[d2/3]))).real, \
-                                            ' ', (nacs*hbar*pi/(time_to_ps*sqrt(masses[d/3]*masses[d2/3]))).imag
+                                        print(i, f, e, ' ' , occ, ' ', 
+                                            (nacs*hbar*pi/(time_to_ps*sqrt(masses[d//3]*masses[d2//3]))).real, 
+                                            ' ', (nacs*hbar*pi/(time_to_ps*sqrt(masses[d//3]*masses[d2//3]))).imag)
                                     
                                     spectral_function[counter,:] += discretize_peak(e,nacs, x_axis, sigma, delta_method)
             
-            spectral_function[counter,:] *= (pi*hbar)/sqrt(masses[d/3]*masses[d2/3])
+            spectral_function[counter,:] *= (pi*hbar)/sqrt(masses[d//3]*masses[d2//3])
             counter += 1
 
 
     return x_axis, spectral_function
-
 
 def evaluate_friction_at_zero(
         fermi_energy,
@@ -677,11 +674,11 @@ def evaluate_friction_at_zero(
     for d in range(n_dim):
         for d2 in range(d,n_dim):
             friction = 0.0
-            print 'Calculating spectral function for components {0} and {1}'.format(d,d2)
+            print('Calculating spectral function for components {0} and {1}'.format(d,d2))
             for s in range(n_spin):
                 for k in range(n_kpts):
                     if debug:
-                        print 's ', s, 'k ', k
+                        print('s ', s, 'k ', k)
                     wk = kweights[k]
                     orb_min = 0
                     orb_lumo = 0
@@ -698,27 +695,28 @@ def evaluate_friction_at_zero(
                         if e<=ef+2.00*keys['max_energy']:
                             orb_max = ei
                     if debug:
-                        print orb_min, orb_homo, orb_lumo, orb_max
+                        print(orb_min, orb_homo, orb_lumo, orb_max)
                     for i in range(orb_min,orb_homo+1):
                         for f in range(orb_lumo, orb_max+1):
                             e = eigenvalues[k,s,f] - eigenvalues[k,s,i]
                             occ =(fermi_occ(eigenvalues[k,s,i],ef,T) - fermi_occ(eigenvalues[k,s,f],ef,T))*(2./n_spin)
                             if e>0.0 and e<=1.0*keys['max_energy'] and occ>=1.E-5:
                                 #calculate transition strength
-                                nacs1 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[d,k,s,:,:],\
+                                nacs1 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[d,k,s,:,:],
                                         psi[k,s,f,:]))
-                                nacs2 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[d2,k,s,:,:],\
+                                nacs2 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[d2,k,s,:,:],
                                         psi[k,s,f,:]))
                                 nacs = np.dot(nacs1.conjugate().transpose(),nacs2)
                                 nacs /= (e)
                                 nacs *= wk
                                 nacs *= occ
                                 if debug:
-                                    print i, f, e, ' ' , occ, ' ', \
-                                        (nacs*hbar*pi/(time_to_ps*sqrt(masses[d/3]*masses[d2/3]))).real, \
-                                        ' ', (nacs*hbar*pi/(time_to_ps*sqrt(masses[d/3]*masses[d2/3]))).imag
-                                friction += nacs*delta_function(e, perturbation_e, sigma, delta_method)/ \
-                                        (0.5*(1.-np.math.erf((-e/sigma)*(1./np.sqrt(2.)))))
+                                    print(i, f, e, ' ' , occ, ' ',
+                                        (nacs*hbar*pi/(time_to_ps*sqrt(masses[d/3]*masses[d2/3]))).real, 
+                                        ' ', 
+                                        (nacs*hbar*pi/(time_to_ps*sqrt(masses[d/3]*masses[d2/3]))).imag
+                                        )
+                                friction += nacs*delta_function(e, perturbation_e, sigma, delta_method)/(0.5*(1.-np.math.erf((-e/sigma)*(1./np.sqrt(2.)))))
                                 #spectral_function[counter,:] += discretize_peak(e,nacs, x_axis, sigma, delta_method)
             friction_tensor[d,d2] = friction 
             friction_tensor[d,d2] *= (pi*hbar)/sqrt(masses[d/3]*masses[d2/3])
@@ -728,14 +726,8 @@ def evaluate_friction_at_zero(
 
     return friction_tensor 
 
-def evaluate_friction_at_zero_mode(
-        fermi_energy,
-        eigenvalues,
-        kpoints,
-        psi,
-        first_order_H,
-        first_order_S,
-        **kwargs):
+
+def evaluate_friction_at_zero_mode(fermi_energy, eigenvalues, kpoints, psi, first_order_H, first_order_S, **kwargs):
     """
     Calculates spectral functions for all cartesian directions and 
     couplings between directions.
@@ -814,7 +806,7 @@ def evaluate_friction_at_zero_mode(
     for s in range(n_spin):
         for k in range(n_kpts):
             if debug:
-                print 's ', s, 'k ', k
+                print('s ', s, 'k ', k)
             wk = kweights[k]
             orb_min = 0
             orb_lumo = 0
@@ -831,27 +823,28 @@ def evaluate_friction_at_zero_mode(
                 if e<=ef+2.00*keys['max_energy']:
                     orb_max = ei
             if debug:
-                print orb_min, orb_homo, orb_lumo, orb_max
+                print(orb_min, orb_homo, orb_lumo, orb_max)
             for i in range(orb_min,orb_homo+1):
                 for f in range(orb_lumo, orb_max+1):
                     e = eigenvalues[k,s,f] - eigenvalues[k,s,i]
                     occ =(fermi_occ(eigenvalues[k,s,i],ef,T) - fermi_occ(eigenvalues[k,s,f],ef,T))*(2./n_spin)
                     if e>0.0 and e<=1.0*keys['max_energy'] and occ>=1.E-5:
                         #calculate transition strength
-                        nacs1 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[k,s,:,:],\
+                        nacs1 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[k,s,:,:],
                                 psi[k,s,f,:]))
-                        nacs2 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[k,s,:,:],\
+                        nacs2 = np.dot(psi[k,s,i,:].conjugate().transpose(),np.dot(G[k,s,:,:],
                                 psi[k,s,f,:]))
                         nacs = np.dot(nacs1.conjugate().transpose(),nacs2)
                         nacs /= (e)
                         nacs *= wk
                         nacs *= occ
                         if debug:
-                            print i, f, e, ' ' , occ, ' ', \
-                                (nacs*hbar*pi/(time_to_ps)).real, \
-                                ' ', (nacs*hbar*pi/(time_to_ps)).imag
-                        friction += nacs*delta_function(e, perturbation_e, sigma, delta_method)/ \
-                                (0.5*(1.-np.math.erf((-e/sigma)*(1./np.sqrt(2.)))))
+                            print(i, f, e, ' ' , occ, ' ',
+                                (nacs*hbar*pi/(time_to_ps)).real, 
+                                ' ', 
+                                (nacs*hbar*pi/(time_to_ps)).imag
+                                )
+                        friction += nacs*delta_function(e, perturbation_e, sigma, delta_method)/(0.5*(1.-np.math.erf((-e/sigma)*(1./np.sqrt(2.)))))
                         #spectral_function[counter,:] += discretize_peak(e,nacs, x_axis, sigma, delta_method)
     
     friction *= (pi*hbar)

@@ -77,8 +77,8 @@ def siesta_calc_HSX(int nspin, np.ndarray[REAL_TYPE_t,ndim=2] kpts_array,
     for ki,k in enumerate(kpts_array):
         kvec = k[:3]
         for si in range(nspin):
-            for iuo in xrange(no_u):
-                for j in xrange(numh[iuo]):
+            for iuo in range(no_u):
+                for j in range(numh[iuo]):
                     ind = listhptr[iuo] + j
                     jo = listh[ind] -1
                     juo = indxuo[jo] -1

@@ -285,7 +285,7 @@ def calculate_nonadiabatic_coupling_HS_kpts(
                                     product_i += tmp_i
                             product_real = product_r*product_r + product_i*product_i
                             product_real /= (e)
-                            print k1,k2, i, f, e, "{0:18.16f}".format(product_real*wk1*wk2)
+                            print(k1,k2, i, f, e, "{0:18.16f}".format(product_real*wk1*wk2))
                             product_real *= dirac_weight(e)
                             product += product_real
                 gamma += product*wk1*wk2

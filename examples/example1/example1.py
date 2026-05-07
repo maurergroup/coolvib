@@ -46,7 +46,7 @@ keywords = {
     'debug': 0,
         }
 
-print 'workflow initialized and keywords set'
+print('workflow initialized and keywords set')
 
 ######READ QM INPUT DATA###
 model.read_input_data(
@@ -57,7 +57,7 @@ model.read_input_data(
         incr=finite_difference_incr,
         debug=0,
         )
-print 'successfully read QM input data'
+print('successfully read QM input data')
 
 ############
 #We can either calculate the spectral function and evaluate friction 
@@ -76,7 +76,7 @@ print 'successfully read QM input data'
 #or we directly calculate friction
 model.calculate_friction_tensor( **keywords)
 
-print 'successfully calculated friction tensor'
+print('successfully calculated friction tensor')
 
 model.analyse_friction_tensor()
 model.print_jmol_friction_eigenvectors()
@@ -92,12 +92,12 @@ ft= np.dot(hessian_modes,np.dot(model.friction_tensor,hessian_modes.transpose())
 E, V = np.linalg.eigh(ft)
 coolvib.routines.output.print_matrix(ft)
 
-print 'Relaxation rates along vibrational modes in 1/ps'
+print('Relaxation rates along vibrational modes in 1/ps')
 for i in range(len(ft)):
-    print ft[i,i]
-print 'Vibrational lifetimes along vibrational modes in ps'
+    print(ft[i,i])
+print('Vibrational lifetimes along vibrational modes in ps')
 for i in range(len(ft)):
-    print 1./ft[i,i]
+    print(1./ft[i,i])
 
 ######Print vibrational lifetimes and relaxation rates to a file instead######   
 #file_output = 'relax_rate_CO_on_Pd111.txt'    

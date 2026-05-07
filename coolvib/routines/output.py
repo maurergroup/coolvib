@@ -124,11 +124,11 @@ def print_matrix(matrix):
     """
     fancy printing of matrix
     """
-    print '      '
-    print '      '.join(["{0:14d}  ".format(i) for i in range(len(matrix[1])) ])
+    print('      ')
+    print('      '.join(["{0:14d}  ".format(i) for i in range(len(matrix[1])) ]))
     for i, element in enumerate(matrix):
-        print "{0:6d}".format(i),''.join(['{0:6.4e} '.format(y.real) for y in element] ) 
-    print '      '
+        print("{0:6d}".format(i),''.join(['{0:6.4e} '.format(y.real) for y in element] ))
+    print('      ')
 
 def plot_spectral_function(x_axis, spectral_function):
     """
