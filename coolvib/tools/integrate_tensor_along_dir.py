@@ -85,7 +85,7 @@ if __name__=="__main__":
     ss = np.linspace(0.10,3.0,20)
 
     names = ['square','gauss','fermi','sine','lorentz']
-    print 'window   square     gauss     fermi     sine     lorentz'
+    print('window   square     gauss     fermi     sine     lorentz')
     for s in ss:
         k = 0
         for i in range(n):
@@ -142,7 +142,7 @@ if __name__=="__main__":
         string =str(s)+'  '
         for f in range(5):
              string += str(float( 1./np.dot(mode.transpose(),np.dot(friction_tensor[:,:,f],mode)))) +' '
-        print string
+        print(string)
     
 else:
     pass

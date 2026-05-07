@@ -33,12 +33,12 @@ import numpy as np
 if __name__=="__main__":
 
     if len(argv)<2:
-        print 'Execute this script the following way:'
-        print 'fhiaims_add_outputoptions_to_control.py <OUTPUT_filename>'
-        print 'OUTPUT_filename has to be an FHI-AIMS OUTPUT file generated with keyword '
-        print "'output k_point_list '"
+        print('Execute this script the following way:')
+        print('fhiaims_add_outputoptions_to_control.py <OUTPUT_filename>')
+        print('OUTPUT_filename has to be an FHI-AIMS OUTPUT file generated with keyword ')
+        print("'output k_point_list '")
     else:
-        print 'Reading FHI-AIMS Output file'
+        print('Reading FHI-AIMS Output file')
 
         filename = argv[1]
         lines = open(filename,'r').readlines()
@@ -66,8 +66,8 @@ if __name__=="__main__":
 
         kpoints = np.array(kpoints)
 
-        print kpoints
-        print ''
+        print(kpoints)
+        print('')
         n_kpts = len(kpoints)
         n_bands = int(n_kpts/2)
         
@@ -85,9 +85,9 @@ if __name__=="__main__":
         output += 'output overlap_matrix \n ' 
         output += 'output hamiltonian_matrix \n ' 
 
-        print output
+        print(output)
 
-        print ' '
+        print(' ')
         output = '#add this to your python finite difference script using the ASE FHI-aims calculator\n'
         output += 'output = ["eigenvectors", '
         output += ' "k_point_list", '
@@ -100,7 +100,7 @@ if __name__=="__main__":
                     output += ' {0:8.4f} '.format(kpoints[n*2+i,xyz])
             output += ' 2 ", \n'
         output += ' ], '
-        print output
+        print(output)
 
 else:
     pass

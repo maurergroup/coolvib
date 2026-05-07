@@ -22,12 +22,12 @@ k space. This is very time consuming and therefore written in Cython.
 import cython
 import numpy as np
 cimport numpy as np
-REAL_TYPE = np.float
-INT_TYPE = np.int
-COMPLEX_TYPE = np.complex
-ctypedef np.int_t INT_TYPE_t
-ctypedef np.float_t REAL_TYPE_t
-ctypedef np.complex_t COMPLEX_TYPE_t
+REAL_TYPE = np.float64
+INT_TYPE = np.int64
+COMPLEX_TYPE = np.complex128
+ctypedef np.int64_t INT_TYPE_t
+ctypedef np.float64_t REAL_TYPE_t
+ctypedef np.complex128_t COMPLEX_TYPE_t
 
 from libc.math cimport sin, cos
 

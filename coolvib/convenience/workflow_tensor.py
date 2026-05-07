@@ -76,7 +76,7 @@ class workflow_tensor():
         if code in codes:
             self.code = code
         else:
-            print 'This code is not supported, choose one of ', codes
+            print('This code is not supported, choose one of ', codes)
 
     def set_active_atoms(self, active_atoms=None):
         """
@@ -97,7 +97,7 @@ class workflow_tensor():
         """
 
         if self.code is None:
-            print 'Please set code first using .set_code'
+            print('Please set code first using .set_code')
 
         method_to_call =getattr(parser,parser.codes[self.code]+'_tensor')
         self = method_to_call(self, **kwargs)
@@ -227,7 +227,7 @@ class workflow_tensor():
         k = 0
         for i in range(n_dim):
             for j in range(i,n_dim):
-                print 'Component {0} {1}'.format(i,j)
+                print('Component {0} {1}'.format(i,j))
                 output.plot_spectral_function(self.x_axis,self.spectral_function[k])
                 k += 1
 
