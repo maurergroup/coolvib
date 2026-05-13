@@ -52,7 +52,7 @@ setup(
     version = __version__,
     url = "www.damaurer.at",
     author = "Reinhard J. Maurer",
-    author_email = "reinhard.maurer@yale.edu",
+    author_email = "reinhard.maurer@univie.ac.at",
     description = ("This package contains routines and scripts to calculate \
             electron-phonon coupling, friction tensors, and vibrational lifetimes \
             from different quantum chemistry codes. \

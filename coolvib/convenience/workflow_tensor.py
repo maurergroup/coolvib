@@ -198,6 +198,18 @@ class workflow_tensor():
                         self.basis_pos,
                         cell,
                         **kwargs)
+            elif mode is 'from_ELSI':
+                if 'el_ph_coupling_path' in kwargs:
+                    self.x_axis, self.spectral_function = spectral.calculate_spectral_function_tensor_from_elph_matrix(
+                        kwargs['el_ph_coupling_error'],
+                        self.fermi_energy,
+                        self.eigenvalues,
+                        self.kpoints,
+                        self.psi,
+                        masses,
+                        **kwargs)
+                else:
+                    raise ValueError("For calculation from ELSI outputs, output path must be included via the el_ph_coupling_path kwarg.")
 
         else:
             #plane wave stuff

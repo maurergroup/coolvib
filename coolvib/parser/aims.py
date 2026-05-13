@@ -17,8 +17,11 @@ Parsing routines for FHI-Aims
 """
 
 import numpy as np
+import struct
+import scipy.sparse as sp
 import os
 from os.path import join as pathjoin
+
 
 def parse_aims_tensor(model, spin=True, path='./', filename='aims.out', active_atoms=[1], incr=0.01, debug=0):
     """
@@ -406,3 +409,147 @@ def aims_read_HS(directory='./', spin=False, debug=False):
 
     return H*27.211384500, S
 
+def aims_read_elsi_to_csc(filename):
+    """
+    This routine reads the data from files created using any of the FHI-Aims ELSI 
+    outputting options.
+
+    the function takes as arguments the path where these files can be found.
+
+    the function returns the data stored as a scipy csc_matrix which is a sparse data
+    representation.
+    """
+    mat = open(filename,"rb")
+    data = mat.read()
+    mat.close()
+    i8 = "l"
+    i4 = "i"
+
+    # Get header
+    start = 0
+    end = 128
+    header = struct.unpack(i8*16,data[start:end])
+    #print(header)
+
+    # Number of basis functions (matrix size)
+    n_basis = header[3]
+
+    # Total number of non-zero elements
+    nnz = header[5]
+
+    # Get column pointer
+    start = end
+    end = start+n_basis*8
+    col_ptr = struct.unpack(i8*n_basis,data[start:end])
+    col_ptr += (nnz+1,)
+    col_ptr = np.array(col_ptr)
+
+    # Get row index
+    start = end
+    end = start+nnz*4
+    row_idx = struct.unpack(i4*nnz,data[start:end])
+    row_idx = np.array(row_idx)
+
+    # Get non-zero value
+    start = end
+
+    if header[2] == 0:
+        # Real case
+        end = start+nnz*8
+        nnz_val = struct.unpack("d"*nnz,data[start:end])
+    else:
+        # Complex case
+        end = start+nnz*16
+        nnz_val = struct.unpack("d"*nnz*2,data[start:end])
+        nnz_val_real = np.array(nnz_val[0::2])
+        nnz_val_imag = np.array(nnz_val[1::2])
+        nnz_val = nnz_val_real + 1j*nnz_val_imag
+
+    nnz_val = np.array(nnz_val)
+
+    # Change convention
+    for i_val in range(nnz):
+        row_idx[i_val] -= 1
+
+    for i_col in range(n_basis+1):
+        col_ptr[i_col] -= 1
+
+    return sp.csc_matrix((nnz_val,row_idx,col_ptr),shape=(n_basis,n_basis))
+
+
+def aims_read_elsi_density_matrix(dm_path="./", spin=False):
+    """
+    This routine constructs a numpy density matrix from files created using the 
+    FHI-Aims ELSI outputting options.
+
+    To produce outputs of this kind from FHI-Aims are generated with the keyword
+    'elsi_output_matrix    density_matrix'.
+
+    the function takes as arguments the path where these files can be found and a 
+    Boolean based on whether the density matrix outputs are spin resolved.
+
+    the function returns the data stored as a 
+    [num_kpoints, num_spins, basis_length, basis_length] np.array.
+    """
+    DM_files = []
+
+    #how many files exist
+    for file in os.listdir(dm_path):
+        if file.startswith("D_spin_"):
+            DM_files.append(file)
+
+    n_files = len(DM_files)
+    
+    if spin:
+        spins = ["01", "02"]
+    else:
+        spins = ["01"]
+    
+    n_kpts = n_files/len(spins)
+    k_points = np.arange(0, n_kpts-1)
+
+    template_dm = aims_read_elsi_to_csc(f"{dm_path}/D_spin_01_kpt_000001.csc")
+    density_matrix = np.zeros((len(k_points), len(spins), template_dm.shape[0], template_dm.shape[1]), dtype=np.complex128)
+
+    for (spin, spin_idx) in enumerate(spins):
+        for k_point in k_points:
+            if k_point + 1 < 10:
+                k_point_str = "0" + str(k_point + 1)
+            else: 
+                k_point_str = str(k_point + 1)
+            
+            dm_at_k = aims_read_elsi_to_csc(f"{dm_path}/D_spin_{spin}_kpt_0000{k_point_str}.csc")
+            
+            density_matrix[k_point, spin_idx, :, :] = np.array(dm_at_k.todense())
+
+    return density_matrix
+
+def find_num_atoms_and_kpoints(full_epc_path):
+    all_epc_directory_files = [file for file in listdir(f"{full_epc_path}") if isfile(join(full_epc_path, file))]
+    epc_files = [file for file in all_epc_directory_files if file.startswith("epc_atom_") and '.csc' in file]
+    epc_files.sort()
+    
+    first_file = epc_files[0]
+    final_file = epc_files[-1]
+
+    first_file = first_file.replace("_", " ")
+    first_file = first_file.replace(".", " ")
+    first_file = first_file.strip().split()
+
+    final_file = final_file.replace("_", " ")
+    final_file = final_file.replace(".", " ")
+    final_file = final_file.strip().split()
+
+    print("smallest kpoint = ", int(first_file[-2]))
+    print("largest kpoint = ", int(final_file[-2]))
+
+    print("smallest atom index = ", int(first_file[2]))
+    print("largest atom index = ", int(final_file[2]))
+    
+    k_point_labels = np.arange(int(first_file[-2]), int(final_file[-2])+1)
+    k_points = np.arange(int(first_file[-2])-1, int(final_file[-2]))
+    
+    atom_labels = np.arange(int(first_file[2]), int(final_file[2])+1)
+    atom_idxs = np.arange(0, len(atom_labels))
+
+    return atom_idxs, atom_labels, k_points, k_point_labels

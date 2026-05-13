@@ -23,6 +23,8 @@ from coolvib.routines import fermi_occ
 from coolvib.routines import delta_function 
 from coolvib.routines import discretize_peak
 from coolvib.constants import hplanck, hbar, time_to_ps
+from coolvib.parser import aims_read_elsi_to_csc
+from coolvib.parser import find_num_atoms_and_kpoints
 
 import coolvib.routines.build_G as build_G 
 
@@ -100,7 +102,7 @@ def calculate_spectral_function_mode(
     n_kpts, n_spin, n_states, n_basis = first_order_H.shape
     kweights = kpoints[:,-1]
 
-    G = np.zeros([n_kpts,n_spin,n_states, n_basis],dtype=np.complex)
+    G = np.zeros([n_kpts,n_spin,n_states, n_basis],dtype=np.complex128)
     for s in range(n_spin):
         G[:,s,:,:] = first_order_H[:,s,:,:] - fermi_energy*first_order_S[:,:,:]
 
@@ -262,7 +264,7 @@ def calculate_spectral_function_tensor(
     T = keys['temperature']
     debug = keys['debug']
 
-    spectral_function = np.zeros([n_dim*(n_dim+1)/2,n_axis],dtype=np.complex)
+    spectral_function = np.zeros([n_dim*(n_dim+1)/2,n_axis],dtype=np.complex128)
 
     counter = 0
     for d in range(n_dim):
@@ -312,6 +314,173 @@ def calculate_spectral_function_tensor(
 
     return x_axis, spectral_function
 
+
+def calculate_spectral_function_tensor_from_elph_matrix(
+        el_ph_coupling_path,
+        fermi_energy,
+        eigenvalues,
+        kpoints,
+        psi,
+        masses,
+        **kwargs):
+    """
+    Calculates spectral functions for all cartesian directions and 
+    couplings between directions.
+
+    Parameters:
+
+    el_ph_coupling_path: string
+        base path for directory containing the ELSI electron-phonon
+        coupling matricies
+
+    fermi_energy: float
+        Fermi Level in eV
+
+    eigenvalues: np.array
+        numpy array of eigenvalues with dimensions given by 
+        n_kpoints, n_spin, n_states
+
+    kpoints: np.array
+        array of kpoints with shape (n_kpoints, 4) where the 
+        first three columns give the x, y and z components of 
+        the kvector in reciprocal space and the fourth column 
+        gives the kpoint weight.
+
+    psi: np.array
+        array of wavefunction coefficients with its shape given 
+        by n_kpoints, n_spin, n_states and n_basisfunctions
+        
+    masses: np.array or list
+        list of masses for the n_atoms active atoms
+
+
+    Returns:
+
+    x_axis: np.array
+        array with the discretized x axis values for the spectral function
+
+    spectral_function:: np.array
+        2-dimensional array 
+
+    """
+
+    #ANALYSE KWARGS
+
+    default_keywords = {
+            'discretization_type' : 'gaussian',
+            'discretization_broadening' : 0.01,
+            'discretization_length' : 0.01,
+            'max_energy' : 3.0,
+            'temperature': 300,
+            'debug' : 0,
+            }
+
+    keys = {}
+    for key in default_keywords.keys():
+        if  key in kwargs:
+            keys[key] = kwargs[key] 
+        else:
+            keys[key] = default_keywords[key]
+
+    """     
+    #build coupling matrix G
+    
+    n_atoms, n_cart, n_kpts, n_spin, n_states, n_basis = first_order_H.shape
+    n_dim = n_atoms*n_cart
+
+    kweights = kpoints[:,-1]
+
+    G = np.zeros([n_dim,n_kpts,n_spin,n_states, n_basis],dtype=np.complex)
+    counter = 0
+    for a in range(n_atoms):
+        for c in range(n_cart):
+            for s in range(n_spin):
+                G[counter,:,s,:,:] = first_order_H[a,c,:,s,:,:] - fermi_energy*first_order_S[a,c,:,:,:]
+            counter += 1 
+    """
+
+    # calculate spectral components
+
+    n_axis = int(keys['max_energy']/keys['discretization_length'])
+    x_axis = np.array( [keys['discretization_length']*i for i in range(n_axis)] )
+    ef = fermi_energy
+    delta_method = keys['discretization_type']
+    sigma = keys['discretization_broadening']
+    T = keys['temperature']
+    debug = keys['debug']
+
+    n_cartesian_dims = 3
+    n_spin =1
+    atom_idxs, atom_labels, _, k_point_labels = find_num_atoms_and_kpoints(el_ph_coupling_path)
+    epc_1 = aims_read_elsi_to_csc(f"{el_ph_coupling_path}/epc_atom_0000{atom_labels[0]}_cart_1_k_0000{k_point_labels[0]}.csc")
+
+    n_dim = len(atom_labels)*n_cartesian_dims
+    kweights = kpoints[:,-1]
+
+    spectral_function = np.zeros([n_dim*(n_dim+1)/2,n_axis],dtype=np.complex128)
+
+    counter = 0
+    for atom_idx in atom_idxs:
+        for atom_idx_2 in atom_idxs[atom_idx:]:
+            for cartesian_idx in range(n_cartesian_dims):
+                for cartesian_idx_2 in range(cartesian_idx, n_cartesian_dims):
+                    print(f"""
+                          Calculating spectral function for atom {atom_labels[atom_idx]} along cartesian direction {cartesian_idx}
+                          and atom {atom_labels[atom_idx_2]} along cartesian direction {cartesian_idx_2}
+                          """
+                          )
+                    for s in range(n_spin):
+                        for k in range(len(kpoints)):
+                            if debug:
+                                print('s ', s, 'k ', k)
+                            wk = kweights[k]
+                            orb_min = 0
+                            orb_lumo = 0
+                            orb_homo = 0
+                            orb_max = 0
+                            for ei,e in enumerate(eigenvalues[k,s,:]):
+                                occ = fermi_occ(e,ef,T)*(2./n_spin)
+                                if e<=ef-2.00*keys['max_energy']:
+                                    orb_min = ei
+                                if occ>=0.999:
+                                    orb_lumo = ei
+                                if occ>= 0.001:
+                                    orb_homo = ei
+                                if e<=ef+2.00*keys['max_energy']:
+                                    orb_max = ei
+                            if debug:
+                                print(orb_min, orb_homo, orb_lumo, orb_max)
+                            for i in range(orb_min,orb_homo+1):
+                                for f in range(orb_lumo, orb_max+1):
+                                    e = eigenvalues[k,s,f] - eigenvalues[k,s,i]
+                                    occ =(fermi_occ(eigenvalues[k,s,i],ef,T) - fermi_occ(eigenvalues[k,s,f],ef,T))*(2./n_spin)
+                                    if e>0.0 and e<=1.0*keys['max_energy'] and occ>=1.E-5:
+                                        #calculate transition strength
+                                        epc_1 = aims_read_elsi_to_csc(f"{el_ph_coupling_path}/epc_atom_0000{atom_labels[atom_idx]}_cart_{cartesian_idx}_k_0000{k_point_labels[k]}.csc")
+                                        epc_2 = aims_read_elsi_to_csc(f"{el_ph_coupling_path}/epc_atom_0000{atom_labels[atom_idx_2]}_cart_{cartesian_idx_2}_k_0000{k_point_labels[k]}.csc")
+                                        
+                                        epc_1 = np.array(epc_1.todense())
+                                        epc_2 = np.array(epc_2.todense())
+                                        
+                                        nacs1 = np.dot(psi[k,s,i,:].conjugate().transpose(), np.dot(epc_1, psi[k,s,f,:]))
+                                        nacs2 = np.dot(psi[k,s,i,:].conjugate().transpose(), np.dot(epc_2, psi[k,s,f,:]))
+                                        
+                                        nacs = np.dot(nacs1.conjugate().transpose(),nacs2)
+                                        nacs /= (e)
+                                        nacs *= wk
+                                        nacs *= occ
+                                        if debug:
+                                            print(i, f, e, ' ' , occ, ' ', 
+                                                (nacs*hbar*pi/(time_to_ps*sqrt(masses[atom_idx]*masses[atom_idx_2]))).real, 
+                                                ' ', 
+                                                (nacs*hbar*pi/(time_to_ps*sqrt(masses[atom_idx]*masses[atom_idx_2]))).imag
+                                                )
+                                        spectral_function[counter,:] += discretize_peak(e, nacs, x_axis, sigma, delta_method)
+                    
+                    spectral_function[counter,:] *= (pi*hbar)/sqrt(masses[atom_idx]*masses[atom_idx_2])
+                    counter += 1
+
+    return x_axis, spectral_function
 
 def calculate_spectral_function_tensor_q(
         fermi_energy,
@@ -427,8 +596,8 @@ def calculate_spectral_function_tensor_q(
 
     raise NotImplementedError('This is work in progress')
 
-    # real_H_r = np.zeros([n_atoms,n_cart,nk,nk,ns,n_basis,n_basis],dtype=np.complex) 
-    # real_S_r = np.zeros([n_atoms,n_cart,nk,nk,n_basis,n_basis],dtype=np.complex) 
+    # real_H_r = np.zeros([n_atoms,n_cart,nk,nk,ns,n_basis,n_basis],dtype=np.complex128) 
+    # real_S_r = np.zeros([n_atoms,n_cart,nk,nk,n_basis,n_basis],dtype=np.complex128) 
     # for N1 in range(nk):
         # Nvec1 = N[N1] 
         # for N2 in range(nk):
@@ -445,7 +614,7 @@ def calculate_spectral_function_tensor_q(
                 # real_S_r[:,:,N1,N2,:,:]+=first_order_S[:,:,l,:,:]*phase*kw
     # print 'Built real space first_order_H and first_order_S'
     
-    # G = np.zeros([n_atoms,n_cart,nk,nk,ns,n_basis,n_basis],dtype=np.complex)
+    # G = np.zeros([n_atoms,n_cart,nk,nk,ns,n_basis,n_basis],dtype=np.complex128)
     
     # counter = 0
     # for atom in range(n_atoms):
@@ -462,8 +631,8 @@ def calculate_spectral_function_tensor_q(
                             # Nvec1 = N[N1] 
                             # for N2 in range(nk):
                                 # Nvec2 = N[N2]
-                                # tmpH = np.zeros([n_atoms,n_cart,n_basis,n_basis],dtype=np.complex)
-                                # tmpS = np.zeros([n_atoms,n_cart,n_basis,n_basis],dtype=np.complex)
+                                # tmpH = np.zeros([n_atoms,n_cart,n_basis,n_basis],dtype=np.complex128)
+                                # tmpS = np.zeros([n_atoms,n_cart,n_basis,n_basis],dtype=np.complex128)
                                 # for l in range(nk):
                                     # kvec = kpts[l]
                                     # kw = kweights[l]
@@ -507,7 +676,7 @@ def calculate_spectral_function_tensor_q(
     T = keys['temperature']
     debug = keys['debug']
 
-    spectral_function = np.zeros([n_dim*(n_dim+1)/2,n_axis],dtype=np.complex)
+    spectral_function = np.zeros([n_dim*(n_dim+1)/2,n_axis],dtype=np.complex128)
 
     counter = 0
     for d in range(n_dim):
@@ -652,7 +821,7 @@ def evaluate_friction_at_zero(
 
     kweights = kpoints[:,-1]
 
-    G = np.zeros([n_dim,n_kpts,n_spin,n_states, n_basis],dtype=np.complex)
+    G = np.zeros([n_dim,n_kpts,n_spin,n_states, n_basis],dtype=np.complex128)
     counter = 0
     for a in range(n_atoms):
         for c in range(n_cart):
@@ -790,7 +959,7 @@ def evaluate_friction_at_zero_mode(fermi_energy, eigenvalues, kpoints, psi, firs
 
     kweights = kpoints[:,-1]
 
-    G = np.zeros([n_kpts,n_spin,n_states, n_basis],dtype=np.complex)
+    G = np.zeros([n_kpts,n_spin,n_states, n_basis],dtype=np.complex128)
     for s in range(n_spin):
         G[:,s,:,:] = first_order_H[:,s,:,:] - fermi_energy*first_order_S[:,:,:]
 
